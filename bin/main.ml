@@ -1,4 +1,11 @@
 open Tsdl
+
+type pointxy = { x:int; y:int }
+
+let points : pointxy list = [{x=5; y=5}; {x=15; y=5}; {x=5; y=15}; {x=15; y=15}]
+
+
+let ( let* ) = Result.bind
 let shouldQuit () =
     let evt = Sdl.Event.create() in
         if Sdl.poll_event (Some evt) then
@@ -10,38 +17,48 @@ let shouldQuit () =
     ;;
 
 
-let render ( renderer : Sdl.renderer) =
-    print_endline "test";
-    match  ((Sdl.set_render_draw_color renderer 255 0 0 255)) with
-    | Error (`Msg e) -> Sdl.log "Create window error: %s" e;
-    | Ok () -> print_endline "setting the color succeeded";
-    match  (Sdl.render_draw_point renderer 10 10) with
-    | Error (`Msg e) -> Sdl.log "Create window error: %s" e;
-    | Ok () -> print_endline "it was ok";
+
+let render (renderer : Sdl.renderer) (points : pointxy list) : unit =
+    let render_point (point : pointxy) = ignore ((Sdl.render_fill_rect renderer (Some (Sdl.Rect.create ~x:point.x ~y:point.y ~w:5 ~h:5)))) in
+  ignore(
+      let* () = Sdl.set_render_draw_color renderer 255 255 255 255 in
+  let* () = Sdl.render_clear renderer in
+  let* () = Sdl.set_render_draw_color renderer 0 0 0 255 in
+  let* () =
+      ignore(List.map render_point points);
+      Sdl.render_present renderer;
+      Ok ()
+  in 
+  Ok ()
+  )
+  
 ;;
+
+let screen (renderer : Sdl.renderer) (points : pointxy list) =
+    let rec loop renderer points =
+        if shouldQuit() != true then (
+
+            Sdl.delay (50l);
+            render renderer points;
+            ignore(loop renderer points);
+        )
+    in
+
+    loop renderer points;
+;;
+
 
 let main () = match Sdl.init Sdl.Init.(video + events) with
 | Error (`Msg e) -> Sdl.log "Init error: %s" e; 1
 | Ok () ->
-    match Sdl.create_window ~w:(640*2) ~h:(480*2) "SDL OpenGL" Sdl.Window.opengl with
+    match Sdl.create_window ~w:(640) ~h:(480) "SDL OpenGL" Sdl.Window.opengl with
     | Error (`Msg e) -> Sdl.log "Create window error: %s" e; exit 1
     | Ok window ->
         match Sdl.create_renderer (window) with
         | Error (`Msg e) -> Sdl.log "Create window error: %s" e; exit 1
         | Ok renderer -> 
-            ignore (Sdl.render_set_scale renderer 0.0 0.0);
-            let running = ref true in
-            while !running do 
-                let tmp = shouldQuit() in
-                ignore(if tmp == true then ignore(running := false;));
 
-                ignore(Sdl.set_render_draw_color renderer 255 255 255 255);
-                ignore (Sdl.render_clear(renderer));
-
-                ignore (render(renderer));
-                ignore(Sdl.render_present (renderer));
-                Sdl.delay (20l);
-            done;
+            screen renderer points;
 
             Sdl.destroy_window window;
             Sdl.quit ();
