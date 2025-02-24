@@ -1,4 +1,4 @@
-## Spinnging cube in Ocaml
+## Spinning cube in Ocaml
 this ocaml program uses the tsdl library / connector to display a spinning cube.
 It's based on [this video](https://www.youtube.com/watch?v=kdRJgYO1BJM&list=PLYmIsLVSssdIOn5J71CVBblPlXici1_2A&index=9) showing the same proccess but in C.
 
