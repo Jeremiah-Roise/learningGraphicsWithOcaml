@@ -6,6 +6,14 @@ open Tsdl
 type pointxy = { x:float; y:float; z:float }
 
 let points : pointxy list ref = ref [{x=20.0; y=20.0; z=120.0}; {x=120.0; y=20.0; z=120.0}; {x=20.0; y=120.0; z=120.0}; {x=120.0; y=120.0; z=120.0}; {x=20.0; y=20.0; z=20.0}; {x=120.0; y=20.0; z=20.0}; {x=20.0; y=120.0; z=20.0}; {x=120.0; y=120.0; z=20.0}]
+let lines = [(0,1); (2,3); (0,2); (1,3); (4,5); (6,7); (4,6); (5,7); (0,4); (1,5); (2,6); (3,7);]
+
+let rec drawlines renderer (points : pointxy list) (connections : (int * int) list) : unit =
+    let connect (con : (int * int)) : unit = let (startIndex, endIndex) = con in
+    ignore(Sdl.render_draw_line_f renderer (List.nth points startIndex).x (List.nth points startIndex).y (List.nth points endIndex).x (List.nth points endIndex).y ) in
+    List.iter connect connections;
+    ()
+;;
 
 let ( let* ) = Result.bind
 let shouldQuit () =
@@ -19,21 +27,20 @@ let shouldQuit () =
     ;;
 
 
-
 let render (renderer : Sdl.renderer) (points : pointxy list) : unit =
-    let render_point (point : pointxy) = ignore ((Sdl.render_fill_rect renderer (Some (Sdl.Rect.create ~x:(int_of_float(floor point.x)) ~y:(int_of_float(floor point.y)) ~w:5 ~h:5)))) in
+    let render_point (point : pointxy) = ignore ((Sdl.render_fill_rect renderer (Some (Sdl.Rect.create ~x:(int_of_float(floor point.x)) ~y:(int_of_float(floor point.y)) ~w:1 ~h:1)))) in
   ignore(
       let* () = Sdl.set_render_draw_color renderer 255 255 255 255 in
       let* () = Sdl.render_clear renderer in
       let* () = Sdl.set_render_draw_color renderer 0 0 0 255 in
       let* () =
       ignore(List.map render_point points);
+        drawlines renderer points lines;
       Sdl.render_present renderer;
       Ok ()
   in 
   Ok ()
   )
-  
 ;;
 
 (* Transform moves all the points in a list by whatever the offset is for that dimension.*)
@@ -83,7 +90,7 @@ let screen (renderer : Sdl.renderer) (points : pointxy list ref) =
     let centroid = generateCentroidOffset !points in
     let rec loop renderer (points : pointxy list ref) =
         if shouldQuit() != true then (
-            Sdl.delay (50l);
+            Sdl.delay (10l);
             points := transformneg !points centroid.x centroid.y centroid.z;
             let irot (point : pointxy) = rotate point 0.01 0.00 0.01 in 
             points := List.map irot !points;
